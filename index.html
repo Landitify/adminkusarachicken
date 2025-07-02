@@ -31,10 +31,14 @@
     input {
       width: 100%;
       padding: 12px;
-      margin: 8px 0;
+      margin: 10px auto 0;
+      display: block;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 16px;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+
     }
     button {
       padding: 12px;
@@ -43,6 +47,9 @@
       border: none;
       border-radius: 6px;
       font-size: 16px;
+      width: 100%;
+      margin: 10px auto 0;
+      display: block;
       cursor: pointer;
       margin-top: 10px;
     }
@@ -116,9 +123,54 @@
       0% { transform: rotate(0deg); }
       100% { transform: rotate(360deg); }
     }
-        .logout-btn:hover {
-          background: #d32f2f;
-        }
+    .logout-btn:hover {
+      background: #d32f2f;
+    }
+
+
+   @media (max-width: 600px) {
+  .produk-header {
+    display: none; /* Sembunyikan header tabel */
+  }
+
+  .produk-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+
+  .produk-item div {
+    width: 100%;
+    text-align: left;
+  }
+
+  .produk-item .harga-sekarang {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .produk-item input {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  .produk-item .btn-update {
+    width: 100%;
+    margin-top: 8px;
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .produk-item .produk-nama {
+    font-weight: bold;
+    font-size: 16px;
+  }
+}
+
+      
 </style>
 </head>
 <body>
