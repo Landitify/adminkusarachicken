@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Update Harga Produk</title>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Poppins', sans-serif;
+      background-color: #fff5ec;
+      margin: 0;
+      padding: 0;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #333;
+    }
+    #loginSection, #adminSection {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      padding: 30px;
+      margin-top: 50px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 8px 0;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+    }
+    button {
+      padding: 12px;
+      background: #f57c00;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    button:hover {
+      background-color: #ef6c00;
+    }
+    #loginStatus, #statusMsg {
+      margin-top: 12px;
+      font-size: 14px;
+      text-align: center;
+    }
+    .produk-header, .produk-item {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr 1fr;
+      gap: 10px;
+      align-items: center;
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+    }
+    .produk-header {
+      background: #f0f0f0;
+      font-weight: bold;
+      margin-top: 20px;
+      border: 1px solid #ddd;
+    }
+    .produk-item {
+      background: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+      margin-top: 10px;
+    }
+    .produk-item input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      width: 100%;
+      text-align: right;
+    }
+    .btn-update {
+      background: #57a300;
+    }
+    .btn-update:hover {
+      background: #4e8f00;
+    }
+    .logout-btn {
+      background: #e53935;
+    }
+</style>
+</head>
+<body>
+
+  <div class="container">
+    <h1>Admin Kusara Chicken</h1>
+
+  <div id="loginSection">
+    <h2>Login Admin</h2>
+    <input type="email" id="email" placeholder="Email Admin">
+    <input type="password" id="password" placeholder="Password">
+    <button onclick="loginAdmin()">Login</button>
+    <p id="loginStatus"></p>
+  </div>
+    
+<div id="adminSection" style="display:none;">
+      <h2>📝 Daftar Produk & Harga</h2>
+      <div class="produk-header">
+        <div>Nama Produk</div>
+        <div>Harga Saat Ini</div>
+        <div>Harga Baru</div>
+        <div>Aksi</div>
+      </div>
+      <div id="menu-container"></div>
+      <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+      <p id="statusMsg"></p>
+    </div>
+  </div>
+
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+document.addEventListener("DOMContentLoaded", () => {
+  const firebaseConfig = {
+    apiKey: "AIzaSyAjuzb9SHhgU5ahs_Zx4YUOQus7bJyg-tA",
+    authDomain: "pesanan-ayam-kusara-chicken.firebaseapp.com",
+    databaseURL: "https://pesanan-ayam-kusara-chicken-default-rtdb.firebaseio.com",
+    projectId: "pesanan-ayam-kusara-chicken",
+    storageBucket: "pesanan-ayam-kusara-chicken.appspot.com",
+    messagingSenderId: "270019898754",
+    appId: "1:270019898754:web:6b7a33f69d504f626d739b"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const auth = getAuth(app);
+  const hargaRef = ref(db, 'HargaProduk');
+
+  const statusMsg = document.getElementById("statusMsg");
+
+  function loginAdmin() {
+  const email = document.getElementById("email").value;
+  const password = document.getElementById("password").value;
+  const status = document.getElementById("loginStatus");
+
+  signInWithEmailAndPassword(auth, email, password)
+    .then(() => {
+      status.textContent = "✅ Login berhasil!";
+      status.style.color = "green";
+    })
+    .catch((error) => {
+      status.textContent = "❌ Login gagal: " + error.message;
+      status.style.color = "red";
+    });
+}
+
+function logoutAdmin() {
+  signOut(auth);
+}
+
+onAuthStateChanged(auth, (user) => {
+  const loginSection = document.getElementById("loginSection");
+  const adminSection = document.getElementById("adminSection");
+
+  if (user) {
+    loginSection.style.display = "none";
+    adminSection.style.display = "block";
+    loadHargaFromFirebase();
+  } else {
+    loginSection.style.display = "block";
+    adminSection.style.display = "none";
+  }
+});
+
+window.loginAdmin = loginAdmin;
+window.logoutAdmin = logoutAdmin;
+
+  function loadHargaFromFirebase() {
+  const container = document.getElementById('menu-container');
+  container.innerHTML = "";
+  
+
+    get(hargaRef).then(snapshot => {
+      if (snapshot.exists()) {
+        const data = snapshot.val();
+        Object.entries(data).forEach(([nama, hargaSekarang]) => {
+          const div = document.createElement('div');
+          div.className = 'produk-item';
+          div.innerHTML = `
+            <div>${nama}</div>
+            <div>Rp ${hargaSekarang.toLocaleString('id-ID')}</div>
+            <div><input type="number" placeholder="Harga Baru" data-nama="${nama}" /></div>
+            <div><button class="btn-update" data-nama="${nama}">Update</button></div>
+          `;
+          container.appendChild(div);
+        });
+
+      document.querySelectorAll('.btn-update').forEach(button => {
+        button.addEventListener('click', () => {
+          const nama = button.dataset.nama;
+          const input = document.querySelector(`input[data-nama="${nama}"]`);
+          const hargaBaru = parseInt(input.value);
+
+          if (isNaN(hargaBaru) || hargaBaru <= 0) {
+            statusMsg.textContent = `❌ Harga tidak valid untuk: ${nama}`;
+            statusMsg.style.color = "red";
+            return;
+          }
+
+          const updateObj = {};
+          updateObj[nama] = hargaBaru;
+
+          update(hargaRef, updateObj)
+            .then(() => {
+              statusMsg.textContent = `✅ Harga ${nama} berhasil diperbarui!`;
+              statusMsg.style.color = "green";
+              input.value = "";
+              loadHargaFromFirebase(); // langsung refresh tampilan tanpa delay
+            })
+            .catch(err => {
+              statusMsg.textContent = `❌ Gagal update: ${err.message}`;
+              statusMsg.style.color = "red";
+            });
+        });
+      });
+
+    } else {
+      container.innerHTML = "<p>Tidak ada data harga ditemukan.</p>";
+    }
+  }).catch(err => {
+    statusMsg.textContent = `❌ Error ambil data: ${err.message}`;
+    statusMsg.style.color = "red";
+  });
+}
+});
+</script>
+</body>
+</html>
