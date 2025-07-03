@@ -126,7 +126,15 @@
     .logout-btn:hover {
       background: #d32f2f;
     }
-
+    #pesanan-container .produk-item div {
+  font-size: 14px;
+    }
+    #pesanan-container .btn-update {
+      background-color: #2196F3;
+    }
+    #pesanan-container .btn-update:hover {
+      background-color: #1976D2;
+    }
 
    @media (max-width: 600px) {
   .produk-header {
@@ -168,6 +176,20 @@
     font-weight: bold;
     font-size: 16px;
   }
+  .produk-item .produk-harga {
+    font-size: 14px;
+    color: #666;
+  }
+  .produk-item .aksi {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .produk-item .aksi button {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+  }
 }
 
       
@@ -201,7 +223,15 @@
       <div id="menu-container"></div>
       <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
       <p id="statusMsg"></p>
+      <h2 style="margin-top: 40px;">📋 Resume Pesanan Masuk</h2>
     </div>
+
+    
+    <div id="pesanan-container"></div>
+
+
+
+
   </div>
 
 
@@ -249,11 +279,67 @@ document.addEventListener("DOMContentLoaded", () => {
       status.style.color = "red";
       spinner.style.display = "none"; // Sembunyikan spinner setelah proses selesai
     });
-}
+  }
+  
 
 function logoutAdmin() {
   signOut(auth);
 }
+
+  function loadPesananMasuk() {
+      const pesananRef = ref(db, 'pesanan');
+      const container = document.getElementById('pesanan-container');
+      container.innerHTML = "🔄 Mengambil data pesanan...";
+
+      get(pesananRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          container.innerHTML = "";
+
+          Object.entries(data).reverse().forEach(([id, item]) => {
+          const { nama = 'Tanpa Nama', wa = '', pesanan: pesananRaw } = item;
+          const daftarPesanan = Array.isArray(pesananRaw) ? pesananRaw : [];
+
+          const listProduk = daftarPesanan.map(p =>
+            `- ${p.menu} x${p.qty}: Rp ${p.total.toLocaleString('id-ID')}`
+          ).join('%0A');
+
+          const totalSemua = daftarPesanan.reduce((acc, p) => acc + p.total, 0);
+
+          const pesanWA =
+            `Halo Kak ${nama},%0A%0ABerikut tagihan pemesanan Ayam di Kusara Chicken:%0A%0A` +
+            `${listProduk}%0A%0ATotal: Rp ${totalSemua.toLocaleString('id-ID')}` +
+            `%0A%0AMohon transfer ke:%0ABNI 1181956153 a.n Muhamad Ahya Kusara` +
+            `%0A%0AJangan lupa kirim bukti transfer ke WA ini ya, terima kasih 🙏`;
+
+          const waLink = wa
+            ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURI(pesanWA)}`
+            : null;
+
+          const div = document.createElement('div');
+          div.className = 'produk-item';
+          div.innerHTML = `
+            <div><strong>${nama}</strong><br><small>${wa || 'No WA kosong'}</small></div>
+            <div>Rp ${totalSemua.toLocaleString('id-ID')}</div>
+            <div>
+              ${
+                waLink
+                  ? `<a href="${waLink}" target="_blank"><button class="btn-update">Kirim Tagihan WA</button></a>`
+                  : `<button disabled class="btn-update" style="background:#ccc;">No WA</button>`
+              }
+            </div>
+          `;
+          container.appendChild(div);
+          });
+
+        } else {
+          container.innerHTML = "<p>Tidak ada data pesanan.</p>";
+        }
+      }).catch(err => {
+        container.innerHTML = `❌ Error ambil data: ${err.message}`;
+      });
+    }
+
 
 onAuthStateChanged(auth, (user) => {
   const loginSection = document.getElementById("loginSection");
@@ -263,10 +349,14 @@ onAuthStateChanged(auth, (user) => {
     loginSection.style.display = "none";
     adminSection.style.display = "block";
     loadHargaFromFirebase();
+    loadPesananMasuk(); // tambahkan ini
+
   } else {
     loginSection.style.display = "block";
     adminSection.style.display = "none";
   }
+
+
 });
 
 window.loginAdmin = loginAdmin;
@@ -330,6 +420,7 @@ window.logoutAdmin = logoutAdmin;
   });
 }
 });
+
 </script>
 </body>
 </html>
