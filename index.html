@@ -297,7 +297,7 @@ function logoutAdmin() {
           container.innerHTML = "";
 
           Object.entries(data).reverse().forEach(([id, item]) => {
-          const { nama = 'Tanpa Nama', wa = '', pesanan: pesananRaw } = item;
+          const { nama = 'Tanpa Nama', wa = '', pesanan: pesananRaw, pembayaran = 'Belum dipilih' } = item;
           const daftarPesanan = Array.isArray(pesananRaw) ? pesananRaw : [];
 
           const listProduk = daftarPesanan.map(p =>
@@ -323,12 +323,23 @@ function logoutAdmin() {
           ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURIComponent(pesanWA)}`
           : null;
 
+          const daftarHTML = daftarPesanan.map(p => 
+            `<div style="text-align:left;">• ${p.menu} x${p.qty} = Rp ${p.total.toLocaleString('id-ID')}</div>`
+          ).join('');
+
           const div = document.createElement('div');
           div.className = 'produk-item';
           div.innerHTML = `
-            <div><strong>${nama}</strong><br><small>${wa || 'No WA kosong'}</small></div>
-            <div>Rp ${totalSemua.toLocaleString('id-ID')}</div>
+            <div style="text-align:left;">
+              <strong>${nama}</strong><br>
+              <small>${wa || 'No WA kosong'}</small>
+              <br><span style="font-size:13px;color:#666;">Pembayaran: <strong>${pembayaran}</strong></span>
+            </div>
             <div>
+              Rp ${totalSemua.toLocaleString('id-ID')}
+              <div style="margin-top:5px;">${daftarHTML}</div>
+            </div>
+            <div class="aksi">
               ${
                 waLink
                   ? `<a href="${waLink}" target="_blank"><button class="btn-update">Kirim Tagihan WA</button></a>`
