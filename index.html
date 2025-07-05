@@ -302,19 +302,26 @@ function logoutAdmin() {
 
           const listProduk = daftarPesanan.map(p =>
             `- ${p.menu} x${p.qty}: Rp ${p.total.toLocaleString('id-ID')}`
-          ).join('%0A');
+          ).join('\n'); // pakai newline biasa
 
           const totalSemua = daftarPesanan.reduce((acc, p) => acc + p.total, 0);
 
-          const pesanWA =
-            `Halo Kak ${nama},%0A%0ABerikut tagihan pemesanan Ayam di Kusara Chicken:%0A%0A` +
-            `${listProduk}%0A%0ATotal: Rp ${totalSemua.toLocaleString('id-ID')}` +
-            `%0A%0AMohon transfer ke:%0ABNI 1181956153 a.n Muhamad Ahya Kusara` +
-            `%0A%0AJangan lupa kirim bukti transfer ke WA ini ya, terima kasih 🙏`;
-
+          const pesanWA = [
+          `Halo Kak ${nama},`,
+          '',
+          `Berikut tagihan pemesanan Ayam di Kusara Chicken:`,
+          '',
+          listProduk,
+          '',
+          `Total: Rp ${totalSemua.toLocaleString('id-ID')}`,
+          '',
+          `Mohon transfer ke:\nBNI 1181956153 a.n Muhamad Ahya Kusara`,
+          '',
+          `Jangan lupa kirim bukti transfer ke WA ini ya, terima kasih 🙏`,
+        ].join('\n'); // gabung semua baris jadi satu string pakai newline
           const waLink = wa
-            ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURI(pesanWA)}`
-            : null;
+          ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURIComponent(pesanWA)}`
+          : null;
 
           const div = document.createElement('div');
           div.className = 'produk-item';
