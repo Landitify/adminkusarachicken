@@ -96,6 +96,14 @@
     }
     .logout-btn {
       background: #e53935;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+    }
+    .logout-btn:hover {
+      background: #d32f2f;
     }
         .loading-spinner {
       display: none;
@@ -118,6 +126,40 @@
       height: 50px;
       animation: spin 1s linear infinite;
     }
+
+    .tab-btn {
+    padding: 10px 16px;
+    border: none;
+    background: #eee;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #f57c00;
+      color: white;
+    }
+    .tab-btn:hover {
+      background: #ef6c00;
+      color: white;
+    }
+    #updateHargaSection,
+    #resumePesananSection {
+      opacity: 0;
+      visibility: hidden;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    #updateHargaSection.show,
+    #resumePesananSection.show {
+      opacity: 1;
+      visibility: visible;
+      max-height: none;
+    }
+
+
 
     @keyframes spin {
       0% { transform: rotate(0deg); }
@@ -198,8 +240,9 @@
 <body>
 
   <div class="container">
-    <h1>Admin Kusara Chicken</h1>
+  <h1>Admin Kusara Chicken</h1>
 
+  <!-- Login -->
   <div id="loginSection">
     <h2>Login Admin</h2>
     <input type="email" id="email" placeholder="Email Admin">
@@ -208,11 +251,25 @@
     <p id="loginStatus"></p>
   </div>
 
+  <!-- Loading Spinner -->
   <div id="loadingSpinner" class="loading-spinner">
-  <div class="spinner"></div>
+    <div class="spinner"></div>
   </div>
-    
-<div id="adminSection" style="display:none;">
+
+  <!-- Admin Dashboard -->
+  <div id="adminSection" style="display:none; position: relative;">
+
+    <!-- ✅ Logout Pojok Kanan Atas -->
+    <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+
+    <!-- ✅ Tab Menu -->
+    <div class="admin-nav" style="display:flex; gap:10px; justify-content:center; margin: 20px 0 30px;">
+      <button onclick="tampilMenu('harga')" id="tab-harga" class="tab-btn active">Update Harga</button>
+      <button onclick="tampilMenu('pesanan')" id="tab-pesanan" class="tab-btn">Resume Pesanan</button>
+    </div>
+
+    <!-- ✅ Update Harga Section -->
+    <div id="updateHargaSection">
       <h2>📝 Daftar Produk & Harga</h2>
       <div class="produk-header">
         <div>Nama Produk</div>
@@ -221,18 +278,21 @@
         <div>Aksi</div>
       </div>
       <div id="menu-container"></div>
-      <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
-      <p id="statusMsg"></p>
-      <h2 style="margin-top: 40px;">📋 Resume Pesanan Masuk</h2>
     </div>
 
+    <!-- ✅ Status Message -->
+    <p id="statusMsg"></p>
+
+    <!-- ✅ Resume Pesanan Section -->
+    <div id="resumePesananSection" class="show">
+      <h2 style="margin-top: 40px;">📋 Resume Pesanan Masuk</h2>
+      <input type="text" id="searchInput" placeholder="Cari nama atau nomor WA..." style="width:100%;padding:10px;margin-bottom:20px;border:1px solid #ccc;border-radius:6px;font-size:16px;">
+      <div id="pesanan-container"></div>
+    </div>
     
-    <div id="pesanan-container"></div>
-
-
-
-
   </div>
+</div>
+
 
 
 <script type="module">
@@ -286,7 +346,7 @@ function logoutAdmin() {
   signOut(auth);
 }
 
-  function loadPesananMasuk() {
+  function loadPesananMasuk(keyword = "") {
       const pesananRef = ref(db, 'pesanan');
       const container = document.getElementById('pesanan-container');
       container.innerHTML = "🔄 Mengambil data pesanan...";
@@ -297,58 +357,94 @@ function logoutAdmin() {
           container.innerHTML = "";
 
           Object.entries(data).reverse().forEach(([id, item]) => {
-          const { nama = 'Tanpa Nama', wa = '', pesanan: pesananRaw, pembayaran = 'Belum dipilih' } = item;
+          const {
+            nama = 'Tanpa Nama',
+            wa = '',
+            pesanan: pesananRaw,
+            pembayaran = 'Belum dipilih',
+            waktu = ''
+          } = item;
+
+          const keywordLower = keyword.toLowerCase();
+          if (
+            nama.toLowerCase().includes(keywordLower) === false &&
+            wa.toLowerCase().includes(keywordLower) === false
+          ) {
+            return; // Skip kalau gak cocok
+          }
+
           const daftarPesanan = Array.isArray(pesananRaw) ? pesananRaw : [];
 
+          // ✅ Format tanggal
+          const tanggalFormatted = waktu
+            ? new Date(waktu).toLocaleString('id-ID', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+              })
+            : 'Tanpa Tanggal';
+
+          // ✅ Untuk WhatsApp (pakai newline)
           const listProduk = daftarPesanan.map(p =>
             `- ${p.menu} x${p.qty}: Rp ${p.total.toLocaleString('id-ID')}`
-          ).join('\n'); // pakai newline biasa
+          ).join('\n');
 
-          const totalSemua = daftarPesanan.reduce((acc, p) => acc + p.total, 0);
-
-          const pesanWA = [
-          `Halo Kak ${nama},`,
-          '',
-          `Berikut tagihan pemesanan Ayam di Kusara Chicken:`,
-          '',
-          listProduk,
-          '',
-          `Total: Rp ${totalSemua.toLocaleString('id-ID')}`,
-          '',
-          `Mohon transfer ke:\nBNI 1181956153 a.n Muhamad Ahya Kusara`,
-          '',
-          `Jangan lupa kirim bukti transfer ke WA ini ya, terima kasih 🙏`,
-        ].join('\n'); // gabung semua baris jadi satu string pakai newline
-          const waLink = wa
-          ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURIComponent(pesanWA)}`
-          : null;
-
-          const daftarHTML = daftarPesanan.map(p => 
-            `<div style="text-align:left;">• ${p.menu} x${p.qty} = Rp ${p.total.toLocaleString('id-ID')}</div>`
+          // ✅ Untuk tampilan HTML
+          const daftarHTML = daftarPesanan.map(p =>
+            `<li>${p.menu} x${p.qty} = Rp ${p.total.toLocaleString('id-ID')}</li>`
           ).join('');
 
+          // ✅ Total semua
+          const totalSemua = daftarPesanan.reduce((acc, p) => acc + p.total, 0);
+
+          // ✅ Pesan WhatsApp
+          const pesanWA = [
+            `Halo Kak ${nama},`,
+            '',
+            `Berikut tagihan pemesanan Ayam di Kusara Chicken pada tanggal ${tanggalFormatted} :`,
+            '',
+            listProduk,
+            '',
+            `Total: Rp ${totalSemua.toLocaleString('id-ID')}`,
+            '',
+            `Mohon transfer ke:\nBNI 1181956153 a.n Muhamad Ahya Kusara`,
+            '',
+            `Jangan lupa kirim bukti transfer ke WA ini ya, terima kasih 🙏`,
+          ].join('\n');
+
+          // ✅ Link WA
+          const waLink = wa
+            ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURIComponent(pesanWA)}`
+            : null;
+
+          // ✅ Buat tampilan
           const div = document.createElement('div');
           div.className = 'produk-item';
           div.innerHTML = `
-            <div style="text-align:left;">
-              <strong>${nama}</strong><br>
-              <small>${wa || 'No WA kosong'}</small>
-              <br><span style="font-size:13px;color:#666;">Pembayaran: <strong>${pembayaran}</strong></span>
-            </div>
-            <div>
-              Rp ${totalSemua.toLocaleString('id-ID')}
-              <div style="margin-top:5px;">${daftarHTML}</div>
-            </div>
-            <div class="aksi">
-              ${
-                waLink
-                  ? `<a href="${waLink}" target="_blank"><button class="btn-update">Kirim Tagihan WA</button></a>`
-                  : `<button disabled class="btn-update" style="background:#ccc;">No WA</button>`
-              }
+            <div style="text-align:left; grid-column: 1 / -1;">
+              <strong style="font-size:16px;">${nama}</strong><br>
+              <span style="font-size:13px; color:#666;">
+                ${wa || 'No WA'} • Metode: <strong>${pembayaran}</strong><br>
+                <em style="color:#999;">📅 ${tanggalFormatted}</em>
+              </span>
+              <hr style="margin:10px 0;">
+              <ul style="padding-left: 16px; margin: 0 0 10px; font-size:14px; color:#333;">
+                ${daftarHTML}
+              </ul>
+              <div style="font-weight:bold; font-size:15px; margin:10px 0;">
+                Total: Rp ${totalSemua.toLocaleString('id-ID')}
+              </div>
+              <div class="aksi">
+                ${
+                  waLink
+                    ? `<a href="${waLink}" target="_blank"><button class="btn-update">Kirim Tagihan WA</button></a>`
+                    : `<button disabled class="btn-update" style="background:#ccc;">No WA</button>`
+                }
+              </div>
             </div>
           `;
           container.appendChild(div);
-          });
+        });
+
 
         } else {
           container.innerHTML = "<p>Tidak ada data pesanan.</p>";
@@ -368,6 +464,14 @@ onAuthStateChanged(auth, (user) => {
     adminSection.style.display = "block";
     loadHargaFromFirebase();
     loadPesananMasuk(); // tambahkan ini
+      const lastTab = localStorage.getItem('tabAdmin') || 'harga';
+  tampilMenu(lastTab);
+  const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    loadPesananMasuk(searchInput.value);
+  });
+}
 
   } else {
     loginSection.style.display = "block";
@@ -379,6 +483,29 @@ onAuthStateChanged(auth, (user) => {
 
 window.loginAdmin = loginAdmin;
 window.logoutAdmin = logoutAdmin;
+
+window.tampilMenu = function(menu) {
+  const hargaSection = document.getElementById('updateHargaSection');
+  const pesananSection = document.getElementById('resumePesananSection');
+
+  // Simpan ke localStorage
+  localStorage.setItem('tabAdmin', menu);
+
+  // Atur tampilan dengan class .show
+  if (menu === 'harga') {
+    hargaSection.classList.add('show');
+    pesananSection.classList.remove('show');
+  } else {
+    hargaSection.classList.remove('show');
+    pesananSection.classList.add('show');
+  }
+
+  // Highlight tombol
+  document.getElementById('tab-harga').classList.toggle('active', menu === 'harga');
+  document.getElementById('tab-pesanan').classList.toggle('active', menu === 'pesanan');
+};
+
+
 
   function loadHargaFromFirebase() {
   const container = document.getElementById('menu-container');
