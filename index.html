@@ -5,8 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Admin - Update Harga Produk</title>
   <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js"></script>
-
   <style>
     body {
       font-family: 'Poppins', sans-serif;
@@ -33,10 +31,14 @@
     input {
       width: 100%;
       padding: 12px;
-      margin: 8px 0;
+      margin: 10px auto 0;
+      display: block;
       border-radius: 6px;
       border: 1px solid #ccc;
       font-size: 16px;
+      box-sizing: border-box;
+      transition: border-color 0.3s;
+
     }
     button {
       padding: 12px;
@@ -45,6 +47,9 @@
       border: none;
       border-radius: 6px;
       font-size: 16px;
+      width: 100%;
+      margin: 10px auto 0;
+      display: block;
       cursor: pointer;
       margin-top: 10px;
     }
@@ -91,14 +96,153 @@
     }
     .logout-btn {
       background: #e53935;
+      padding: 8px 14px;
+      font-size: 14px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
     }
+    .logout-btn:hover {
+      background: #d32f2f;
+    }
+        .loading-spinner {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255, 255, 255, 0.6);
+      z-index: 9999;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .spinner {
+      border: 6px solid #f3f3f3;
+      border-top: 6px solid #f57c00;
+      border-radius: 50%;
+      width: 50px;
+      height: 50px;
+      animation: spin 1s linear infinite;
+    }
+
+    .tab-btn {
+    padding: 10px 16px;
+    border: none;
+    background: #eee;
+    border-radius: 6px;
+    font-weight: bold;
+    cursor: pointer;
+    }
+    .tab-btn.active {
+      background: #f57c00;
+      color: white;
+    }
+    .tab-btn:hover {
+      background: #ef6c00;
+      color: white;
+    }
+    #updateHargaSection,
+    #resumePesananSection {
+      opacity: 0;
+      visibility: hidden;
+      max-height: 0;
+      overflow: hidden;
+      transition: all 0.3s ease;
+    }
+
+    #updateHargaSection.show,
+    #resumePesananSection.show {
+      opacity: 1;
+      visibility: visible;
+      max-height: none;
+    }
+
+
+
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .logout-btn:hover {
+      background: #d32f2f;
+    }
+    #pesanan-container .produk-item div {
+  font-size: 14px;
+    }
+    #pesanan-container .btn-update {
+      background-color: #2196F3;
+    }
+    #pesanan-container .btn-update:hover {
+      background-color: #1976D2;
+    }
+
+   @media (max-width: 600px) {
+  .produk-header {
+    display: none; /* Sembunyikan header tabel */
+  }
+
+  .produk-item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px;
+    gap: 10px;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.05);
+  }
+
+  .produk-item div {
+    width: 100%;
+    text-align: left;
+  }
+
+  .produk-item .harga-sekarang {
+    font-size: 14px;
+    color: #666;
+  }
+
+  .produk-item input {
+    width: 100%;
+    font-size: 16px;
+  }
+
+  .produk-item .btn-update {
+    width: 100%;
+    margin-top: 8px;
+    font-size: 16px;
+    padding: 10px;
+  }
+
+  .produk-item .produk-nama {
+    font-weight: bold;
+    font-size: 16px;
+  }
+  .produk-item .produk-harga {
+    font-size: 14px;
+    color: #666;
+  }
+  .produk-item .aksi {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+  }
+  .produk-item .aksi button {
+    width: 100%;
+    padding: 10px;
+    font-size: 16px;
+  }
+}
+
+      
 </style>
 </head>
 <body>
 
   <div class="container">
-    <h1>Admin Kusara Chicken</h1>
+  <h1>Admin Kusara Chicken</h1>
 
+  <!-- Login -->
   <div id="loginSection">
     <h2>Login Admin</h2>
     <input type="email" id="email" placeholder="Email Admin">
@@ -106,8 +250,26 @@
     <button onclick="loginAdmin()">Login</button>
     <p id="loginStatus"></p>
   </div>
-    
-<div id="adminSection" style="display:none;">
+
+  <!-- Loading Spinner -->
+  <div id="loadingSpinner" class="loading-spinner">
+    <div class="spinner"></div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="adminSection" style="display:none; position: relative;">
+
+    <!-- ✅ Logout Pojok Kanan Atas -->
+    <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
+
+    <!-- ✅ Tab Menu -->
+    <div class="admin-nav" style="display:flex; gap:10px; justify-content:center; margin: 20px 0 30px;">
+      <button onclick="tampilMenu('harga')" id="tab-harga" class="tab-btn active">Update Harga</button>
+      <button onclick="tampilMenu('pesanan')" id="tab-pesanan" class="tab-btn">Resume Pesanan</button>
+    </div>
+
+    <!-- ✅ Update Harga Section -->
+    <div id="updateHargaSection">
       <h2>📝 Daftar Produk & Harga</h2>
       <div class="produk-header">
         <div>Nama Produk</div>
@@ -116,17 +278,27 @@
         <div>Aksi</div>
       </div>
       <div id="menu-container"></div>
-      <button class="logout-btn" onclick="logoutAdmin()">Logout</button>
-      <p id="statusMsg"></p>
     </div>
+
+    <!-- ✅ Status Message -->
+    <p id="statusMsg"></p>
+
+    <!-- ✅ Resume Pesanan Section -->
+    <div id="resumePesananSection" class="show">
+      <h2 style="margin-top: 40px;">📋 Resume Pesanan Masuk</h2>
+      <input type="text" id="searchInput" placeholder="Cari nama atau nomor WA..." style="width:100%;padding:10px;margin-bottom:20px;border:1px solid #ccc;border-radius:6px;font-size:16px;">
+      <div id="pesanan-container"></div>
+    </div>
+    
   </div>
+</div>
+
 
 
 <script type="module">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
 import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 import { getDatabase, ref, get, update } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
-import { getMessaging, getToken, onMessage } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-messaging.js";
 
 document.addEventListener("DOMContentLoaded", () => {
   const firebaseConfig = {
@@ -150,23 +322,138 @@ document.addEventListener("DOMContentLoaded", () => {
   const email = document.getElementById("email").value;
   const password = document.getElementById("password").value;
   const status = document.getElementById("loginStatus");
+  const spinner = document.getElementById("loadingSpinner");
+
+    spinner.style.display = "flex"; // TAMPILKAN SPINNER
 
   signInWithEmailAndPassword(auth, email, password)
     .then(() => {
       status.textContent = "✅ Login berhasil!";
       status.style.color = "green";
+      document.getElementById("email").value = "";
+      document.getElementById("password").value = "";
+      spinner.style.display = "none"; // Sembunyikan spinner setelah proses selesai
     })
     .catch((error) => {
       status.textContent = "❌ Login gagal: " + error.message;
       status.style.color = "red";
+      spinner.style.display = "none"; // Sembunyikan spinner setelah proses selesai
     });
-
-
-}
+  }
+  
 
 function logoutAdmin() {
   signOut(auth);
 }
+
+  function loadPesananMasuk(keyword = "") {
+      const pesananRef = ref(db, 'pesanan');
+      const container = document.getElementById('pesanan-container');
+      container.innerHTML = "🔄 Mengambil data pesanan...";
+
+      get(pesananRef).then(snapshot => {
+        if (snapshot.exists()) {
+          const data = snapshot.val();
+          container.innerHTML = "";
+
+          Object.entries(data).reverse().forEach(([id, item]) => {
+          const {
+            nama = 'Tanpa Nama',
+            wa = '',
+            pesanan: pesananRaw,
+            pembayaran = 'Belum dipilih',
+            waktu = ''
+          } = item;
+
+          const keywordLower = keyword.toLowerCase();
+          if (
+            nama.toLowerCase().includes(keywordLower) === false &&
+            wa.toLowerCase().includes(keywordLower) === false
+          ) {
+            return; // Skip kalau gak cocok
+          }
+
+          const daftarPesanan = Array.isArray(pesananRaw) ? pesananRaw : [];
+
+          // ✅ Format tanggal
+          const tanggalFormatted = waktu
+            ? new Date(waktu).toLocaleString('id-ID', {
+                dateStyle: 'short',
+                timeStyle: 'short'
+              })
+            : 'Tanpa Tanggal';
+
+          // ✅ Untuk WhatsApp (pakai newline)
+          const listProduk = daftarPesanan.map(p =>
+            `- ${p.menu} x${p.qty}: Rp ${p.total.toLocaleString('id-ID')}`
+          ).join('\n');
+
+          // ✅ Untuk tampilan HTML
+          const daftarHTML = daftarPesanan.map(p =>
+            `<li>${p.menu} x${p.qty} = Rp ${p.total.toLocaleString('id-ID')}</li>`
+          ).join('');
+
+          // ✅ Total semua
+          const totalSemua = daftarPesanan.reduce((acc, p) => acc + p.total, 0);
+
+          // ✅ Pesan WhatsApp
+          const pesanWA = [
+            `Halo Kak ${nama},`,
+            '',
+            `Berikut tagihan pemesanan Ayam di Kusara Chicken pada tanggal ${tanggalFormatted} :`,
+            '',
+            listProduk,
+            '',
+            `Total: Rp ${totalSemua.toLocaleString('id-ID')}`,
+            '',
+            `Mohon transfer ke:\nBNI 1181956153 a.n Muhamad Ahya Kusara`,
+            '',
+            `Jangan lupa kirim bukti transfer ke WA ini ya, terima kasih 🙏`,
+          ].join('\n');
+
+          // ✅ Link WA
+          const waLink = wa
+            ? `https://wa.me/${wa.replace(/^0/, '62')}?text=${encodeURIComponent(pesanWA)}`
+            : null;
+
+          // ✅ Buat tampilan
+          const div = document.createElement('div');
+          div.className = 'produk-item';
+          div.innerHTML = `
+            <div style="text-align:left; grid-column: 1 / -1;">
+              <strong style="font-size:16px;">${nama}</strong><br>
+              <span style="font-size:13px; color:#666;">
+                ${wa || 'No WA'} • Metode: <strong>${pembayaran}</strong><br>
+                <em style="color:#999;">📅 ${tanggalFormatted}</em>
+              </span>
+              <hr style="margin:10px 0;">
+              <ul style="padding-left: 16px; margin: 0 0 10px; font-size:14px; color:#333;">
+                ${daftarHTML}
+              </ul>
+              <div style="font-weight:bold; font-size:15px; margin:10px 0;">
+                Total: Rp ${totalSemua.toLocaleString('id-ID')}
+              </div>
+              <div class="aksi">
+                ${
+                  waLink
+                    ? `<a href="${waLink}" target="_blank"><button class="btn-update">Kirim Tagihan WA</button></a>`
+                    : `<button disabled class="btn-update" style="background:#ccc;">No WA</button>`
+                }
+              </div>
+            </div>
+          `;
+          container.appendChild(div);
+        });
+
+
+        } else {
+          container.innerHTML = "<p>Tidak ada data pesanan.</p>";
+        }
+      }).catch(err => {
+        container.innerHTML = `❌ Error ambil data: ${err.message}`;
+      });
+    }
+
 
 onAuthStateChanged(auth, (user) => {
   const loginSection = document.getElementById("loginSection");
@@ -176,61 +463,49 @@ onAuthStateChanged(auth, (user) => {
     loginSection.style.display = "none";
     adminSection.style.display = "block";
     loadHargaFromFirebase();
-
-    const messaging = getMessaging(app);
-
-// Minta izin notifikasi ke browser
-Notification.requestPermission().then((permission) => {
-  if (permission === 'granted') {
-    console.log('Izin notifikasi diberikan');
-    return getToken(messaging, {
-      vapidKey: 'BAOo6QuTfYI1f09ytYwKrwA3yyTl0KOCo0KIFX5A5YsheV64TiSSIps4bRbdTQBqhKjsEO44AeOlQJwrAkSUgB8'
-    });
-  } else {
-    console.log('Izin notifikasi ditolak');
-  }
-}).then((token) => {
-  if (token) {
-    console.log('🔔 Token FCM Admin:', token);
-    // Simpan token ini ke Firebase Realtime Database (misal: /AdminTokens/)
-    set(ref(db, 'AdminTokens/' + user.uid), {
-      token: token,
-      email: user.email
-    }).then(() => {
-      console.log('Token berhasil disimpan ke database');
-    }).catch((err) => {
-      console.error('Gagal simpan token ke database:', err);
-    });
-  }
-}).catch((err) => {
-  console.error('Gagal ambil token FCM:', err);
-});
-
-onMessage(messaging, (payload) => {
-  console.log('📩 Pesan foreground:', payload);
-  const { title, body } = payload.notification;
-  new Notification(title, { body });
-});
-
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('/firebase-messaging-sw.js')
-    .then((registration) => {
-      console.log('✅ Service Worker terdaftar:', registration);
-    })
-    .catch((err) => {
-      console.error('❌ Service Worker gagal daftar:', err);
-    });
+    loadPesananMasuk(); // tambahkan ini
+      const lastTab = localStorage.getItem('tabAdmin') || 'harga';
+  tampilMenu(lastTab);
+  const searchInput = document.getElementById('searchInput');
+if (searchInput) {
+  searchInput.addEventListener('input', () => {
+    loadPesananMasuk(searchInput.value);
+  });
 }
-
 
   } else {
     loginSection.style.display = "block";
     adminSection.style.display = "none";
   }
+
+
 });
 
 window.loginAdmin = loginAdmin;
 window.logoutAdmin = logoutAdmin;
+
+window.tampilMenu = function(menu) {
+  const hargaSection = document.getElementById('updateHargaSection');
+  const pesananSection = document.getElementById('resumePesananSection');
+
+  // Simpan ke localStorage
+  localStorage.setItem('tabAdmin', menu);
+
+  // Atur tampilan dengan class .show
+  if (menu === 'harga') {
+    hargaSection.classList.add('show');
+    pesananSection.classList.remove('show');
+  } else {
+    hargaSection.classList.remove('show');
+    pesananSection.classList.add('show');
+  }
+
+  // Highlight tombol
+  document.getElementById('tab-harga').classList.toggle('active', menu === 'harga');
+  document.getElementById('tab-pesanan').classList.toggle('active', menu === 'pesanan');
+};
+
+
 
   function loadHargaFromFirebase() {
   const container = document.getElementById('menu-container');
@@ -290,6 +565,7 @@ window.logoutAdmin = logoutAdmin;
   });
 }
 });
+
 </script>
 </body>
 </html>
